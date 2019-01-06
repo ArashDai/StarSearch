@@ -1,0 +1,29 @@
+body{
+  color:white;
+  /*background from toptal's subtlepatterns*/
+  background-image:url(https://www.toptal.com/designers/subtlepatterns/patterns/stardust.png);
+  border:2 px ;
+}
+
+.radioButtons{
+
+}
+
+#searchWrapper{
+  padding:2rem;
+  border:2px solid white;
+  border-radius: 25px;
+}
+#wrapper{
+  padding:1rem;
+  border:2px solid white;
+  border-radius: 25px;
+}
+.card{
+  color:black;
+  background:white;
+  padding-top:1rem;
+  padding-left:2rem;
+  padding-right:2rem;
+  margin-bottom:1rem;
+}

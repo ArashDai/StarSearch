@@ -1,0 +1,192 @@
+const url = 'https://swapi.co/api/';
+//This project uses facebook's React library
+// the basic rules are you make components and you can nest them
+//every component has state, and it may have props
+//props are passed from parent to child e.g. <Display data={this.state.data}/>
+//react uses jsx which is essentially just javascript and html mixed together
+//when state changes the component re-renders to display the updated state
+class Retrieve extends React.Component{
+  constructor(props){ //here we initialize state
+    super(props)
+    this.state ={names:[]}
+  }
+  componentWillMount(){ //this method runs before the render method, it retrieves the name for each category's items
+    let holder = [];
+    // this.props.data is an array holding url's
+    this.props.data.map((c,i,a)=>{
+      let p1 = new Promise((resolve,reject)=>{
+        $.get(c, (response,status)=>{
+          if(status !== 'success'){
+            reject() 
+          } else {
+            resolve(response.name ? response.name : response.title) //here we grab the names for one category
+          }
+        })
+      })
+      p1.then((name)=>{
+        this.setState({names: this.state.names.concat(name)}) // after the promise resolves we set add the names to state
+      })                                                      // by using setState() we trigger a refresh of the Retrieve component
+    })
+  }
+  
+  render(){ //after componentWillMount completes then render runs
+    console.log(this.props.category, this.props.data, 'Check this out')
+    return (<div>{this.props.category}: {this.state.names.length > 0 ? this.state.names.join(', '):'None'} </div>)
+  }
+}                   
+                        
+class Display extends React.Component{
+  //the data passed from parent to child is refered to as props
+  // and accessed via this.props
+  constructor(props){//here we initialize state and props
+    super(props)
+    this.state = {names:{}}
+  }
+  render(){
+    let results = [];  
+    let attributes = [];  
+    
+    if(this.props.data === null||undefined){ 
+      return null;
+    }
+    else if (this.props.data.count === 0 ){
+      return (
+        <div className='card text-center'> 
+            <h1>Beep Boop</h1>
+            <h4>Sorry, this search didn't yield any results, please check your spelling and try again!</h4>
+              <hr/>
+            <h4>Tips: Make sure you choose a search category!</h4>
+            <h4>some names require hyphens e.g. x-wing</h4>
+        </div>
+      );  
+    } else { //there are atleast one or more results
+      for(let i = 0; i< this.props.data.results.length; i++){
+        //console.log(this.props.data.results,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+         attributes[i]=[];
+         for (let x in this.props.data.results[i]){
+               let y = x.split(''); //uppercase category names
+               y[0]=y[0].toUpperCase();
+               y = y.join(''); 
+               
+             if( Array.isArray( this.props.data.results[i][x]) || x === 'homeworld'){ 
+
+                 attributes[i].push(
+                   <Retrieve category={y}
+                   data={Array.isArray( this.props.data.results[i][x]) ? this.props.data.results[i][x] : [this.props.data.results[i][x]]}/>
+                 )
+             } else if(x==='created'||x==='edited'||x==='url') { 
+               //dont do anything I dont want to display these      
+             } else { 
+               // let y = x.split('');
+               // y[0]=y[0].toUpperCase();
+               // y = y.join(''); 
+                 attributes[i].push(<span>{y}: {this.props.data.results[i][x]} </span>)
+             }
+          }
+          results.push( 
+            <div className='card'>
+              <h1 className='text-center'>{this.props.data.results[i].name}</h1>
+              {attributes[i]}
+            </div>
+          );
+    }
+      return(<div>{results}</div>)
+    }
+  }
+}
+
+class Search extends React.Component{
+  constructor(props){//here we initialize state
+    super(props)
+    this.state = {data: null};
+    this.searchApi = this.searchApi.bind(this);
+  }
+  
+  searchApi(Input) {
+    Input.preventDefault();
+    let category;
+    Input.target.form[2].checked ? category = Input.target.form[2].value : null;
+    Input.target.form[3].checked ? category = Input.target.form[3].value : null;
+    Input.target.form[4].checked ? category = Input.target.form[4].value : null;
+    Input.target.form[5].checked ? category = Input.target.form[5].value : null;
+    Input.target.form[6].checked ? category = Input.target.form[6].value : null;
+    Input.target.form[7].checked ? category = Input.target.form[7].value : null;
+    //on search we determine the search category and set it to state as searchType
+    this.setState({searchType:category});
+    let query = Input.target.form[0].value;
+    //next we grab the form input and add it to a querystring below
+    let queryString = url+category+'/?search='+query;
+    //finally we take the api response and stick it in the application state
+    //by updating the state we trigger a refresh on line 145 rendering the
+    //Display component shown above on line 55
+    $.get(queryString, response =>{
+      this.setState({data:response,
+                     error:null
+                    });
+    }).fail((e)=>{
+      console.log(e)
+      if(e.status === 404){
+      this.setState({error:404});
+      //this shows the error i want to show on line 49
+      }
+    })
+  }
+  
+  render() {
+    return(
+      <div className='col-xs-12' id='searchWrapper'>
+        <form className='col-xs-12'>
+          <div className='form-inline'>
+            <input className='form-control col-sm-8' placeholder='Luke Skywalker' />
+            <input onClick={this.searchApi} type='submit' className="btn btn-default col-sm-4" value='Search'/>
+          </div>
+           
+          <div className='col-xs-12 radioButtons text-center'>
+            <span className='col-xs-1 col-sm-1'>
+              <input  type="radio" name="searchType" value="planets" /> Planets
+            </span>
+            <span className='col-xs-1 col-sm-1'>
+              <input type="radio" name="searchType" value="starships"  /> Starships
+            </span>
+            <span className='col-xs-1 col-sm-1'>
+              <input type="radio" name="searchType" value="vehicles"  /> Vehicles
+            </span>
+            <span className='col-xs-1 col-sm-1'>
+              <input type="radio" name="searchType" value="people"  /> People
+            </span>
+            <span className='col-xs-1 col-sm-1'>
+              <input type="radio" name="searchType" value="films" /> Films
+            </span>
+            <span className='col-xs-1 col-sm-1'>
+              <input type="radio" name="searchType" value="species" /> Species
+            </span>
+          </div>
+        </form>
+        
+        <div>
+          {(this.state.error === 404) ? <Display data={{count:0}}/> : null  } 
+          {this.state.searchType === (null || undefined) ? null : <Display data={this.state.data}/>
+          //if this.state.searchType is null then return null, otherwise render the Display component and pass this.state.data as this.props.data if theres an error show the error component
+          }
+        </div>  
+      </div>
+    )
+  }
+}
+
+class Home extends React.Component{
+  //this is just a wrapper component
+  render(){
+    return (
+      <div className='container-fluid col-md-offset-3 col-md-6' id='wrapper'>
+          <h1 className='text-center'>STAR SEARCH</h1>
+          <Search/>
+      </div>);
+  }
+}
+
+//this is where react enters the webpage
+ReactDOM.render(
+  <Home/>,
+  document.getElementById('root')
+);
